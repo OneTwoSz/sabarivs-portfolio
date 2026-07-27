@@ -1,9 +1,10 @@
 import { forwardRef } from 'react'
 import {
+  EDUCATION,
+  EXPERIENCE,
   LINKS,
   MANIFESTO,
   NUMBERS,
-  PATH,
   PITCH,
   PROJECTS,
   RESEARCH,
@@ -49,16 +50,16 @@ export const Panel = forwardRef<HTMLElement, { data: PanelData; index: number }>
             </h1>
             <div className="intro-meta">
               <div className="col">
-                <div className="kicker">Role</div>
-                <p>Software engineer &amp; web developer — full-stack, interface taken seriously.</p>
+                <div className="kicker">Currently</div>
+                <p>Software Developer at Quantifi — risk systems, and the front ends on them.</p>
               </div>
               <div className="col">
                 <div className="kicker">Based in</div>
                 <p>{SITE.location}</p>
               </div>
               <div className="col">
-                <div className="kicker">Status</div>
-                <p>Open to roles and select freelance work.</p>
+                <div className="kicker">Also</div>
+                <p>Full-stack freelance work, and one ACM paper.</p>
               </div>
             </div>
           </Plane>
@@ -73,17 +74,28 @@ export const Panel = forwardRef<HTMLElement, { data: PanelData; index: number }>
           </Plane>
         )
 
-      case 'path':
+      case 'experience':
         return (
-          <Plane ref={ref} id="path">
-            <Head section="path" />
+          <Plane ref={ref} id="experience">
+            <Head section="experience" note="now at Quantifi" />
             <div className="path-list">
-              {PATH.map((row) => (
-                <div className="path-row" key={row.year}>
-                  <div className="year">{row.year}</div>
-                  <h3 className="title">{row.title}</h3>
+              {EXPERIENCE.map((row) => (
+                <div className="path-row" key={row.company + row.date}>
+                  <div className="year">{row.date}</div>
+                  <h3 className="title">
+                    {row.role}
+                    <span className="at">{row.company}</span>
+                  </h3>
                   <p className="detail">{row.detail}</p>
                 </div>
+              ))}
+            </div>
+            <div className="education">
+              <span className="kicker">Education</span>
+              {EDUCATION.map((e) => (
+                <p key={e.title}>
+                  <b>{e.title}</b> — {e.detail}
+                </p>
               ))}
             </div>
           </Plane>
@@ -124,45 +136,29 @@ export const Panel = forwardRef<HTMLElement, { data: PanelData; index: number }>
 
       case 'work':
         return (
-          <Plane ref={ref} id="work" className="p-title">
+          <Plane ref={ref} id="work">
             <Head section="work" note={`${PROJECTS.length} selected`} />
-            <h2 className="display big">
-              Case
-              <br />
-              Studies
-            </h2>
-            <p className="pitch-body">
-              Products, client work, and one research build — each of them shipped, each of
-              them with a constraint that made it interesting.
-            </p>
-          </Plane>
-        )
-
-      case 'project': {
-        const p = data.project
-        return (
-          <Plane ref={ref} className="p-project">
-            <div className="panel-head">
-              <span className="num">{p.index}</span>
-              <span className="kicker">case study</span>
-              <span className="rule" aria-hidden="true" />
-              <span className="kicker note">{p.year}</span>
-            </div>
-            <h2 className="project-name display">{p.title}</h2>
-            <p className="project-blurb">{p.blurb}</p>
-            <ul className="tags">
-              {p.tags.map((t) => (
-                <li key={t}>{t}</li>
+            <div className="work-list">
+              {PROJECTS.map((p) => (
+                <a
+                  className="work-row"
+                  key={p.title}
+                  href={p.href}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  <span className="idx">{p.index}</span>
+                  <span className="name">{p.title}</span>
+                  <span className="meta">{p.tags.join(' · ')}</span>
+                  <span className="year">{p.year}</span>
+                  <span className="arrow" aria-hidden="true">
+                    ↗
+                  </span>
+                </a>
               ))}
-            </ul>
-            {p.href && (
-              <a className="go" href={p.href} target="_blank" rel="noreferrer noopener">
-                view project <span aria-hidden="true">→</span>
-              </a>
-            )}
+            </div>
           </Plane>
         )
-      }
 
       case 'research':
         return (

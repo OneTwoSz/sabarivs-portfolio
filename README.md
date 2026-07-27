@@ -69,18 +69,19 @@ Two consequences worth knowing:
 | `src/components/Chrome.tsx` | Preloader, grain/vignette, header, progress bar, section nav. |
 | `src/sections/Sections.tsx` | Every panel's markup, switched on `panel.kind`. |
 
-### Adding a project
+### Adding a project or a role
 
-Append to `PROJECTS` in `src/data/content.ts`. It becomes its own panel in the
-flight automatically — `PANELS` spreads `PROJECTS` in. Keep `index` sequential,
-since that string is what renders above the title.
+Append to `PROJECTS` or `EXPERIENCE` in `src/data/content.ts`. Both render as
+rows inside a single panel, so nothing else needs touching — but both panels are
+near the height limit, so **check the result at ~640px tall** before committing.
+Project rows link out to `href`; keep `index` sequential.
 
 ### Adding or reordering a section
 
 1. Add an entry to `SECTIONS` — this drives the jump menu, the header label, and
    the number shown on the panel.
-2. Add one or more entries to `PANELS` pointing at that section id. Several panels
-   may share a section; the jump menu targets the first one.
+2. Add an entry to `PANELS` pointing at that section id. Several panels may share
+   a section; the jump menu targets the first one.
 3. Add a `case` for the new `kind` in `src/sections/Sections.tsx`.
 
 `SECTION_ENTRY` is derived, so nothing else needs updating.

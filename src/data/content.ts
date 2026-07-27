@@ -18,7 +18,7 @@ export const SITE = {
 export const SECTIONS = [
   { id: 'intro', label: 'intro' },
   { id: 'pitch', label: 'pitch' },
-  { id: 'path', label: 'the path' },
+  { id: 'experience', label: 'experience' },
   { id: 'story', label: 'short story' },
   { id: 'numbers', label: 'numbers' },
   { id: 'work', label: 'case studies' },
@@ -31,53 +31,70 @@ export type SectionId = (typeof SECTIONS)[number]['id']
 
 export const PITCH = {
   lead: 'I build software that people actually finish using.',
-  body: 'Full-stack engineering with a bias for the interface — the layer where a system either earns trust or loses it. Business Information Systems out of Monash, sitting on top of a Computer & Communication Engineering foundation. That mix is the whole point: I can read the architecture and still argue about the kerning.',
+  body: 'Five years across a research lab, an enterprise Java floor, an IT team, and now a product engineering team — currently re-architecting how risk results are stored and shipping front ends on top of them at Quantifi. The through-line is the interface: the layer where a system either earns trust or loses it.',
 }
 
-export const PATH: { year: string; title: string; detail: string }[] = [
+export type Role = {
+  date: string
+  role: string
+  company: string
+  detail: string
+}
+
+export const EXPERIENCE: Role[] = [
   {
-    year: '2019',
-    title: 'Computer & Communication Engineering',
+    date: 'May 2025 — Present',
+    role: 'Software Developer',
+    company: 'Quantifi',
     detail:
-      'Started underneath the abstraction — networks, signals, and systems. The part of the stack most web developers never have to think about.',
+      'Re-architected risk result storage into a two-tier model — metadata in SQL, payloads in blob storage — halving report load times. Shipped SweepToCash, a React and TypeScript app on .NET services.',
   },
   {
-    year: '2022',
-    title: 'Monash University — Business Information Systems',
+    date: 'Jul 2022 — Jun 2024',
+    role: 'IT Support Analyst',
+    company: 'Allied Pickfords',
     detail:
-      'Moved up the stack, toward the place where technology has to justify itself to a business. Learned to translate in both directions.',
+      'Led IT infrastructure rollouts for major clients, and redesigned the company website for a 20% lift in conversion and 15% growth in organic traffic.',
   },
   {
-    year: '2023',
-    title: 'Technical engineering & IT internships',
+    date: 'Feb 2021 — Feb 2022',
+    role: 'Java Technical Engineer',
+    company: 'Cognizant',
     detail:
-      'Real constraints, real deadlines, real legacy code. Learned how to be useful in a codebase I did not write, quickly.',
+      'Full-stack Java on Spring with React front ends. Cut bugs by 15%, tightened the CI/CD pipeline, and held 95% functional accuracy before deployment.',
   },
   {
-    year: '2024',
-    title: 'Research — ACM published',
+    date: 'Nov 2019 — Apr 2020',
+    role: 'Research Assistant — Software Defined Networks',
+    company: 'MIT, Manipal',
     detail:
-      'Co-authored "Inflated Exertion" with the Exertion Games Lab: a pneumatic bodily extension that inflates in response to physical activity.',
+      'Statistical, qualitative, and quantitative analysis in a working lab, managing the research data and presenting the findings it supported.',
   },
   {
-    year: '2026',
-    title: 'Building, shipping, freelancing',
+    date: 'Jul 2019 — Jan 2020',
+    role: 'Internship',
+    company: 'BSNL',
     detail:
-      'Client work and products in parallel — AI tooling, commercial sites, and platforms that put people in the same room.',
+      'Traffic management and server administration at national scale — how connectivity infrastructure is actually run when the population is the load.',
   },
+]
+
+export const EDUCATION = [
+  { title: 'Monash University', detail: 'Business Information Systems' },
+  { title: 'Manipal Institute of Technology', detail: 'Computer & Communication Engineering' },
 ]
 
 export const STORY = [
-  "I'm a recent Monash University graduate in Business Information Systems, with a foundational background in Computer and Communication Engineering.",
-  'My practical experience spans technical engineering and IT internships — enough time in fast-moving environments to know that the hard part is rarely the syntax. It is understanding the problem well enough that the solution looks obvious afterwards.',
-  'I like the work that sits between disciplines: an AI tool that has to feel calm, a blockchain system that has to be legible to a non-technical clerk, a wedding venue site that has to load in two seconds on regional mobile data.',
-  'Adaptable and driven, and looking for the kind of team that treats craft as a requirement rather than a bonus.',
+  'I started underneath the abstraction — Computer and Communication Engineering, then a research lab working on software defined networks — before moving up the stack into Business Information Systems at Monash.',
+  'That order matters. Cognizant taught me enterprise Java and what a real deployment pipeline costs. Allied Pickfords put me in front of the people using the thing, which is where I learned that a 20% lift in conversion is a design problem before it is a code problem.',
+  'Now at Quantifi I work on financial risk systems — the kind of software where being wrong is expensive and being slow is almost as bad. Splitting risk results across SQL and blob storage halved report load times, which is the sort of unglamorous win I have come to like most.',
+  'Alongside that: AI tooling, commercial sites, and one ACM paper about a pneumatic sleeve that inflates when you exercise. I like the work that sits between disciplines.',
 ]
 
 export const NUMBERS = [
+  { value: '5', label: 'years in industry', note: 'research lab, enterprise, IT, product' },
   { value: '9+', label: 'shipped projects', note: 'products, client sites, and platforms' },
-  { value: '1', label: 'ACM publication', note: 'CHI / TEI-adjacent HCI research' },
-  { value: '2', label: 'degrees', note: 'engineering foundation, BIS on top' },
+  { value: '1', label: 'ACM publication', note: 'embodied interaction research' },
   { value: '∞', label: 'refactors', note: 'the honest number' },
 ]
 
@@ -177,18 +194,27 @@ export const MANIFESTO = [
  * order. `section` is what the jump menu and the header label report while
  * you are on that panel — several panels can share one section.
  */
-export type Panel =
-  | { kind: 'intro' | 'pitch' | 'path' | 'story' | 'numbers' | 'work' | 'research' | 'manifesto' | 'contact'; section: SectionId }
-  | { kind: 'project'; section: SectionId; project: Project }
+export type Panel = {
+  kind:
+    | 'intro'
+    | 'pitch'
+    | 'experience'
+    | 'story'
+    | 'numbers'
+    | 'work'
+    | 'research'
+    | 'manifesto'
+    | 'contact'
+  section: SectionId
+}
 
 export const PANELS: Panel[] = [
   { kind: 'intro', section: 'intro' },
   { kind: 'pitch', section: 'pitch' },
-  { kind: 'path', section: 'path' },
+  { kind: 'experience', section: 'experience' },
   { kind: 'story', section: 'story' },
   { kind: 'numbers', section: 'numbers' },
   { kind: 'work', section: 'work' },
-  ...PROJECTS.map((project) => ({ kind: 'project' as const, section: 'work' as const, project })),
   { kind: 'research', section: 'research' },
   { kind: 'manifesto', section: 'manifesto' },
   { kind: 'contact', section: 'contact' },
@@ -203,8 +229,9 @@ export const SECTION_ENTRY: Record<SectionId, number> = SECTIONS.reduce(
   {} as Record<SectionId, number>,
 )
 
+// NOTE: the old site shipped a placeholder LinkedIn URL, so there is no verified
+// profile to link. Add it here once confirmed rather than guessing at the slug.
 export const LINKS = [
   { label: 'Email', value: 'sabarivs@gmail.com', href: 'mailto:sabarivs@gmail.com' },
   { label: 'GitHub', value: 'OneTwoSz', href: 'https://github.com/OneTwoSz' },
-  { label: 'LinkedIn', value: 'sabari-vs', href: 'https://www.linkedin.com/in/sabari-vs/' },
 ]
