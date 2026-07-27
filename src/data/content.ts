@@ -172,6 +172,37 @@ export const MANIFESTO = [
   'Ship it. A shipped B beats an unshipped A every single time.',
 ]
 
+/**
+ * The flight path. Each entry is one Z-plane the camera passes through, in
+ * order. `section` is what the jump menu and the header label report while
+ * you are on that panel — several panels can share one section.
+ */
+export type Panel =
+  | { kind: 'intro' | 'pitch' | 'path' | 'story' | 'numbers' | 'work' | 'research' | 'manifesto' | 'contact'; section: SectionId }
+  | { kind: 'project'; section: SectionId; project: Project }
+
+export const PANELS: Panel[] = [
+  { kind: 'intro', section: 'intro' },
+  { kind: 'pitch', section: 'pitch' },
+  { kind: 'path', section: 'path' },
+  { kind: 'story', section: 'story' },
+  { kind: 'numbers', section: 'numbers' },
+  { kind: 'work', section: 'work' },
+  ...PROJECTS.map((project) => ({ kind: 'project' as const, section: 'work' as const, project })),
+  { kind: 'research', section: 'research' },
+  { kind: 'manifesto', section: 'manifesto' },
+  { kind: 'contact', section: 'contact' },
+]
+
+/** First panel index for each section, for the jump menu. */
+export const SECTION_ENTRY: Record<SectionId, number> = SECTIONS.reduce(
+  (acc, s) => {
+    acc[s.id] = Math.max(0, PANELS.findIndex((p) => p.section === s.id))
+    return acc
+  },
+  {} as Record<SectionId, number>,
+)
+
 export const LINKS = [
   { label: 'Email', value: 'sabarivs@gmail.com', href: 'mailto:sabarivs@gmail.com' },
   { label: 'GitHub', value: 'OneTwoSz', href: 'https://github.com/OneTwoSz' },

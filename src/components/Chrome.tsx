@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { SECTIONS, SITE, type SectionId } from '../data/content'
 
 export function Grain() {
@@ -43,13 +43,15 @@ export function Preloader({ done }: { done: boolean }) {
 }
 
 export function Overlay({
-  progress,
   active,
   onJump,
+  progressRef,
+  hintRef,
 }: {
-  progress: number
   active: SectionId
   onJump: (id: SectionId) => void
+  progressRef: RefObject<HTMLDivElement>
+  hintRef: RefObject<HTMLDivElement>
 }) {
   const [open, setOpen] = useState(false)
   const navRef = useRef<HTMLDivElement>(null)
@@ -75,7 +77,7 @@ export function Overlay({
   return (
     <div className="overlay">
       <div className="progress-track" aria-hidden="true">
-        <div className="progress-fill" style={{ width: `${progress * 100}%` }} />
+        <div className="progress-fill" ref={progressRef} />
       </div>
 
       <header className="header">
@@ -114,8 +116,8 @@ export function Overlay({
         </button>
       </nav>
 
-      <div className="hint" style={{ opacity: progress > 0.02 ? 0 : 1 }} aria-hidden="true">
-        <span>scroll</span>
+      <div className="hint" ref={hintRef} aria-hidden="true">
+        <span>scroll to fly</span>
         <div className="line" />
       </div>
     </div>

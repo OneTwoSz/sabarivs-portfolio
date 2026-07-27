@@ -18,12 +18,16 @@ const VERT = /* glsl */ `
 
   uniform mat4 uProj;
   uniform float uTime;
-  uniform float uDepth;
+  uniform float uTravel;
   uniform float uRoll;
   uniform vec2 uPointer;
   uniform float uSize;
 
   varying float vFade;
+
+  // Length of the corridor. Points that pass the camera wrap back to the far
+  // end, so the field is effectively infinite in the direction of travel.
+  const float LEN = 78.0;
 
   vec3 hash3(vec3 p) {
     p = vec3(dot(p, vec3(127.1, 311.7, 74.7)),
@@ -51,20 +55,21 @@ const VERT = /* glsl */ `
   void main() {
     vec3 p = aPosition;
 
+    // Noise is sampled from the point's home position, so its drift travels
+    // with it and the wrap seam never shows.
     float t = uTime * 0.08;
     float n = noise(p * 0.28 + vec3(0.0, 0.0, t));
     float n2 = noise(p * 0.55 + vec3(t * 1.4, 0.0, 0.0));
 
-    p.z += n * 3.2 + n2 * 1.1;
     p.x += n2 * 0.65;
     p.y += n * 0.5;
 
-    // pointer parallax, stronger on the points nearest the camera
-    p.xy += uPointer * 1.35 * (0.35 + p.z * 0.03);
+    // Scroll flies the camera forward: every point marches toward it and
+    // recycles to the far end of the corridor on the way past.
+    p.z = mod(p.z + uTravel, LEN) - LEN;
 
-    // scrolling pushes the field back and down
-    p.z -= uDepth * 9.0;
-    p.y -= uDepth * 2.5;
+    // pointer parallax, strongest on the points nearest the camera
+    p.xy += uPointer * 1.35 * (0.35 + (p.z + LEN) * 0.02);
 
     // a very slow roll so the field never looks locked to the viewport
     float c = cos(uRoll);
@@ -73,11 +78,18 @@ const VERT = /* glsl */ `
 
     // camera sits at z = 14 looking down -z
     vec4 mv = vec4(p.x, p.y, p.z - 14.0, 1.0);
-    gl_Position = uProj * mv;
-    gl_PointSize = uSize * aScale * (14.0 / -mv.z);
+    float dist = -mv.z;
 
-    // fade with depth so the field dissolves instead of ending
-    vFade = smoothstep(38.0, 6.0, -mv.z) * (0.35 + n * 0.65);
+    gl_Position = uProj * mv;
+    // Inverse-distance sizing across a 78-unit corridor: points arrive as
+    // specks and swell as they pass, which is what sells the forward motion.
+    gl_PointSize = uSize * aScale * (100.0 / dist);
+
+    // Fade in at the far end and back out just before the camera, so points
+    // arrive and leave rather than popping.
+    float far = smoothstep(LEN + 14.0, LEN - 16.0, dist);
+    float near = smoothstep(14.0, 27.0, dist);
+    vFade = far * near * (0.35 + n * 0.65);
   }
 `
 
@@ -130,7 +142,7 @@ function perspective(out: Float32Array, fovYRad: number, aspect: number, near: n
 const damp = (current: number, target: number, lambda: number, dt: number) =>
   current + (target - current) * (1 - Math.exp(-lambda * dt))
 
-export default function HeroCanvas({ depth }: { depth: MutableRefObject<number> }) {
+export default function HeroCanvas({ travel }: { travel: MutableRefObject<number> }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const pointer = usePointer()
@@ -172,9 +184,10 @@ export default function HeroCanvas({ depth }: { depth: MutableRefObject<number> 
     const scales = new Float32Array(COUNT)
     for (let i = 0; i < COUNT; i++) {
       // a wide, shallow slab that reads as a horizon rather than a cube
-      positions[i * 3 + 0] = (Math.random() - 0.5) * 44
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 22
-      positions[i * 3 + 2] = -Math.random() * 26
+      positions[i * 3 + 0] = (Math.random() - 0.5) * 46
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 26
+      // spread down the full corridor; the shader wraps within the same range
+      positions[i * 3 + 2] = -Math.random() * 78
       scales[i] = 0.35 + Math.random() * 1.15
     }
 
@@ -196,7 +209,7 @@ export default function HeroCanvas({ depth }: { depth: MutableRefObject<number> 
     const u = {
       proj: gl.getUniformLocation(program, 'uProj'),
       time: gl.getUniformLocation(program, 'uTime'),
-      depth: gl.getUniformLocation(program, 'uDepth'),
+      travel: gl.getUniformLocation(program, 'uTravel'),
       roll: gl.getUniformLocation(program, 'uRoll'),
       pointer: gl.getUniformLocation(program, 'uPointer'),
       size: gl.getUniformLocation(program, 'uSize'),
@@ -231,7 +244,7 @@ export default function HeroCanvas({ depth }: { depth: MutableRefObject<number> 
 
     // ------------------------------------------------------------- frame ---
     const reduced = prefersReducedMotion()
-    const state = { opacity: 0, depth: 0, px: 0, py: 0, time: 0 }
+    const state = { opacity: 0, travel: travel.current, px: 0, py: 0, time: 0 }
     let last = performance.now()
     let frame = 0
     let running = true
@@ -242,13 +255,14 @@ export default function HeroCanvas({ depth }: { depth: MutableRefObject<number> 
       last = now
       if (!reduced) state.time += dt
 
-      state.opacity = damp(state.opacity, 1, 1.4, dt)
-      state.depth = damp(state.depth, depth.current, 3, dt)
+      state.opacity = damp(state.opacity, 0.78, 1.4, dt)
+      // A touch of lag behind the scroll so the field carries momentum.
+      state.travel = damp(state.travel, travel.current, 6, dt)
       state.px = damp(state.px, reduced ? 0 : pointer.current.x, 2.5, dt)
       state.py = damp(state.py, reduced ? 0 : -pointer.current.y, 2.5, dt)
 
       gl.uniform1f(u.time, state.time)
-      gl.uniform1f(u.depth, state.depth)
+      gl.uniform1f(u.travel, state.travel)
       gl.uniform1f(u.roll, Math.sin(state.time * 0.05) * 0.04)
       gl.uniform2f(u.pointer, state.px, state.py)
       gl.uniform1f(u.size, window.innerWidth < 720 ? 1.7 : 2.4)
@@ -257,9 +271,6 @@ export default function HeroCanvas({ depth }: { depth: MutableRefObject<number> 
       gl.clearColor(0, 0, 0, 0)
       gl.clear(gl.COLOR_BUFFER_BIT)
       gl.drawArrays(gl.POINTS, 0, COUNT)
-
-      // recede behind the reading sections instead of competing with them
-      wrap.style.opacity = Math.max(0.16, Math.min(1, 1 - state.depth * 1.9)).toFixed(3)
 
       frame = requestAnimationFrame(render)
     }
@@ -295,7 +306,7 @@ export default function HeroCanvas({ depth }: { depth: MutableRefObject<number> 
       gl.deleteBuffer(scaleBuf)
       gl.deleteProgram(program)
     }
-  }, [depth, pointer])
+  }, [travel, pointer])
 
   return (
     <div className="hero-canvas" ref={wrapRef} aria-hidden="true">
