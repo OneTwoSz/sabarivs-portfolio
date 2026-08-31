@@ -115,8 +115,9 @@ export function useFlight({
 
         const d = t - i
 
-        // Cull anything not in the corridor; keeps us to ~3 live panels.
-        if (d < -1.45 || d > 1.0) {
+        // Cull anything not in the corridor. The window is tight because a panel
+        // is fully transparent outside it, so there is nothing to draw.
+        if (d < -0.85 || d > 0.7) {
           if (el.style.display !== 'none') el.style.display = 'none'
           continue
         }
@@ -135,13 +136,13 @@ export function useFlight({
         // Approaching panels stay faint until they are close, so the panel at
         // the focal plane is never competing with a legible ghost behind it.
         const opacity =
-          d < 0 ? smoothstep(-1.45, -0.35, d) : 1 - smoothstep(0.25, 0.8, d)
+          d < 0 ? smoothstep(-0.8, -0.15, d) : 1 - smoothstep(0.18, 0.65, d)
         inner.style.opacity = opacity.toFixed(3)
 
         // Focus falls off either side of the focal plane. Skipped on small
         // screens — blurring full-viewport type is the expensive part.
         if (!coarse) {
-          const blur = clamp((Math.abs(d) - 0.1) * 9, 0, 8)
+          const blur = clamp((Math.abs(d) - 0.07) * 15, 0, 13)
           inner.style.filter = blur < 0.05 ? 'none' : `blur(${blur.toFixed(2)}px)`
         }
       }
