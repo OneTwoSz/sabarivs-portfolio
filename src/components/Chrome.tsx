@@ -1,5 +1,35 @@
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { forwardRef, useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { SECTIONS, SITE, type SectionId } from '../data/content'
+
+/**
+ * A ring of the name repeated in outline type, standing in the corridor so the
+ * camera flies through it. Each segment is rotated around a shared Y axis and
+ * pushed out to a radius, which builds a real cylinder rather than a flat strip
+ * — so the far side genuinely passes behind you.
+ *
+ * `--ring` is written by the flight loop: it is the ring's own distance from
+ * the camera in panel units, same convention as a panel's `--d`.
+ */
+export const NameRing = forwardRef<
+  HTMLDivElement,
+  { text: string; segments?: number }
+>(function NameRing({ text, segments = 8 }, ref) {
+  return (
+    <div className="name-ring" ref={ref} aria-hidden="true">
+      <div className="ring-spin">
+        {Array.from({ length: segments }, (_, i) => (
+          <span
+            className="ring-seg"
+            key={i}
+            style={{ '--i': i, '--n': segments } as CSSProperties}
+          >
+            {text} <i>✦</i>
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+})
 
 export function Grain() {
   return (

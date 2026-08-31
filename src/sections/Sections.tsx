@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, type CSSProperties } from 'react'
 import {
   EDUCATION,
   EXPERIENCE,
@@ -120,14 +120,28 @@ export const Panel = forwardRef<HTMLElement, { data: PanelData; index: number }>
 
       case 'numbers':
         return (
-          <Plane ref={ref} id="numbers">
+          <Plane ref={ref} id="numbers" className="p-numbers">
             <Head section="numbers" />
-            <div className="numbers">
+            <div className="stat-field">
               {NUMBERS.map((n) => (
-                <div className="cell" key={n.label}>
-                  <div className="value">{n.value}</div>
-                  <div className="label">{n.label}</div>
-                  <div className="note">{n.note}</div>
+                <div
+                  className="stat"
+                  key={n.label}
+                  style={
+                    {
+                      '--depth': n.depth,
+                      left: `${n.x}%`,
+                      top: `${n.y}%`,
+                    } as CSSProperties
+                  }
+                >
+                  <span className="value" aria-hidden="true">
+                    {n.value}
+                  </span>
+                  <span className="label">
+                    <span className="sr-value">{n.value} </span>
+                    {n.label}
+                  </span>
                 </div>
               ))}
             </div>

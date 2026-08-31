@@ -1,7 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Grain, Overlay, Preloader } from './components/Chrome'
+import { Grain, NameRing, Overlay, Preloader } from './components/Chrome'
 import { Panel } from './sections/Sections'
-import { PANELS, SECTION_ENTRY, type SectionId } from './data/content'
+import { PANELS, SECTION_ENTRY, SITE, type SectionId } from './data/content'
 import { PANEL_VH, prefersReducedMotion, useFlight, useSmoothScroll } from './lib/hooks'
 
 const HeroCanvas = lazy(() => import('./components/HeroCanvas'))
@@ -14,6 +14,7 @@ export default function App() {
   const travel = useRef(0)
   const progressFill = useRef<HTMLDivElement>(null)
   const hint = useRef<HTMLDivElement>(null)
+  const ring = useRef<HTMLDivElement>(null)
 
   const flat = useMemo(() => prefersReducedMotion(), [])
   const scrollTo = useSmoothScroll(ready)
@@ -26,6 +27,7 @@ export default function App() {
     travel,
     progressFill,
     hint,
+    ring,
     onPanelChange,
   })
 
@@ -85,6 +87,7 @@ export default function App() {
       )}
 
       <main className="stage">
+        <NameRing text={SITE.name} ref={ring} />
         {PANELS.map((data, i) => (
           <Panel
             key={i}

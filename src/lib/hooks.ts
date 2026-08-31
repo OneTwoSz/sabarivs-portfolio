@@ -10,6 +10,10 @@ export const PANEL_Z = 1000
 /** World units the point field travels per panel. */
 export const PANEL_WORLD = 8
 
+/** Where the name ring stands in the corridor, in panel units. Just past the
+ *  hero, so it is the first thing you fly through. */
+export const RING_AT = 0.55
+
 export function prefersReducedMotion() {
   return (
     typeof window !== 'undefined' &&
@@ -62,6 +66,7 @@ type FlightArgs = {
   travel: MutableRefObject<number>
   progressFill: RefObject<HTMLElement>
   hint: RefObject<HTMLElement>
+  ring: RefObject<HTMLElement>
   /** Called only when the nearest panel changes, so React re-renders rarely. */
   onPanelChange: (index: number) => void
 }
@@ -78,6 +83,7 @@ export function useFlight({
   travel,
   progressFill,
   hint,
+  ring,
   onPanelChange,
 }: FlightArgs) {
   useEffect(() => {
@@ -129,6 +135,9 @@ export function useFlight({
         // Panels never intersect, so painting order is purely nearest-first.
         // DOM order would put later (further) panels on top, hence this.
         el.style.zIndex = String(1000 + Math.round(d * 100))
+        // Published for content that parallaxes against its own panel — the
+        // scattered stat numerals read their depth against this.
+        el.style.setProperty('--d', d.toFixed(3))
 
         const inner = el.firstElementChild as HTMLElement | null
         if (!inner) continue
@@ -153,6 +162,24 @@ export function useFlight({
         onPanelChange(index)
       }
 
+      // --- name ring ------------------------------------------------------
+      // Rides the same camera as the panels, one step behind the hero, so you
+      // pass through the middle of the cylinder on the way to the pitch.
+      if (ring.current) {
+        const rd = t - RING_AT
+        const style = ring.current.style
+        style.setProperty('--ring', rd.toFixed(3))
+        style.setProperty('--ring-spin', (t * 34).toFixed(2))
+        style.zIndex = String(1000 + Math.round(rd * 100))
+        // Peaks as you pass through it and is gone by the time either
+        // neighbouring panel settles, so it never sits behind readable text.
+        // Capped well under 1: it is scenery, not a headline.
+        const vis =
+          (rd < 0 ? smoothstep(-0.55, -0.12, rd) : 1 - smoothstep(0.06, 0.42, rd)) * 0.62
+        style.setProperty('--ring-opacity', vis.toFixed(3))
+        style.display = vis < 0.002 ? 'none' : ''
+      }
+
       const max = document.documentElement.scrollHeight - window.innerHeight
       const progress = max > 0 ? clamp(window.scrollY / max, 0, 1) : 0
       if (progressFill.current) {
@@ -167,7 +194,7 @@ export function useFlight({
 
     frame = requestAnimationFrame(render)
     return () => cancelAnimationFrame(frame)
-  }, [count, panels, travel, progressFill, hint, onPanelChange])
+  }, [count, panels, travel, progressFill, hint, ring, onPanelChange])
 }
 
 /** Normalised pointer position (-1…1) for the field's parallax. */

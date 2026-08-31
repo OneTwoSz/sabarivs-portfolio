@@ -91,11 +91,25 @@ export const STORY = [
   'Alongside that: AI tooling, commercial sites, and one ACM paper about a pneumatic sleeve that inflates when you exercise. I like the work that sits between disciplines.',
 ]
 
-export const NUMBERS = [
-  { value: '5', label: 'years in industry', note: 'research lab, enterprise, IT, product' },
-  { value: '9+', label: 'shipped projects', note: 'products, client sites, and platforms' },
-  { value: '1', label: 'ACM publication', note: 'embodied interaction research' },
-  { value: '∞', label: 'refactors', note: 'the honest number' },
+/**
+ * Scattered through the corridor rather than sitting in a grid. `depth` is
+ * 0 (far, small, slow) to 1 (close, huge, fast) and drives size, stroke
+ * weight, dimming and parallax rate together. `x`/`y` are percentages of the
+ * panel, positioning each numeral's own anchor point.
+ */
+export type Stat = {
+  value: string
+  label: string
+  depth: number
+  x: number
+  y: number
+}
+
+export const NUMBERS: Stat[] = [
+  { value: '5', label: 'years in industry', depth: 0.95, x: 2, y: 54 },
+  { value: '9+', label: 'shipped projects', depth: 0.62, x: 41, y: 14 },
+  { value: '1', label: 'ACM publication', depth: 0.3, x: 38, y: 84 },
+  { value: '∞', label: 'refactors', depth: 0.14, x: 74, y: 40 },
 ]
 
 export const PROJECTS: Project[] = [
