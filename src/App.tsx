@@ -63,7 +63,10 @@ export default function App() {
     [flat, scrollTo],
   )
 
-  const activeSection = PANELS[Math.min(panelIndex, PANELS.length - 1)].section
+  const safeIndex = Number.isFinite(panelIndex)
+    ? Math.min(Math.max(panelIndex, 0), PANELS.length - 1)
+    : 0
+  const activeSection = (PANELS[safeIndex] ?? PANELS[0]).section
 
   return (
     <>

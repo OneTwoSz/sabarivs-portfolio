@@ -102,7 +102,9 @@ export function useFlight({
     let frame = 0
 
     const render = () => {
-      const panelPx = window.innerHeight * PANEL_VH
+      // Guard against a zero-height viewport (hidden tab, pre-layout): a 0 here
+      // makes t NaN, which poisons every downstream index.
+      const panelPx = Math.max(1, window.innerHeight * PANEL_VH)
       const t = window.scrollY / panelPx
 
       travel.current = t * PANEL_WORLD
@@ -144,7 +146,7 @@ export function useFlight({
         }
       }
 
-      const index = clamp(Math.round(t), 0, count - 1)
+      const index = Number.isFinite(t) ? clamp(Math.round(t), 0, count - 1) : 0
       if (index !== lastIndex) {
         lastIndex = index
         onPanelChange(index)
