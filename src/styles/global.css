@@ -156,75 +156,6 @@ html.flat .panel-inner {
   filter: none !important;
 }
 
-/* ============================================================== NAME RING === */
-
-/* A cylinder of the name in outline type, standing in the corridor. The flight
-   loop writes --ring (distance from camera, in panel units); the ring rides
-   that on Z, so you fly through it between panels. Sits behind the panels but
-   in front of the starfield. */
-
-.name-ring {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  z-index: 500;
-  transform-style: preserve-3d;
-  transform: translateZ(calc(var(--ring, -3) * 1000px));
-  will-change: transform;
-}
-
-.ring-spin {
-  position: relative;
-  transform-style: preserve-3d;
-  /* Slow idle turn plus a scroll-driven twist, so the band is never static. */
-  transform: rotateX(-12deg) rotateY(calc(var(--ring-spin, 0) * 1deg));
-}
-
-.ring-seg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform-origin: 50% 50%;
-  /* Fan the segments evenly around the axis and push each out to the radius. */
-  transform: translate(-50%, -50%) rotateY(calc(var(--i) * (360deg / var(--n))))
-    translateZ(var(--ring-radius, 780px));
-  white-space: nowrap;
-
-  font-family: var(--display);
-  font-weight: 900;
-  text-transform: uppercase;
-  font-size: clamp(2.5rem, 7vw, 6rem);
-  line-height: 1;
-  letter-spacing: 0.04em;
-
-  color: transparent;
-  -webkit-text-stroke: 1.15px var(--fg);
-  /* Opacity lives on the leaves: putting it on either ancestor would force
-     transform-style back to flat and collapse the cylinder. */
-  opacity: var(--ring-opacity, 0);
-}
-
-.ring-seg i {
-  font-style: normal;
-  color: var(--accent);
-  -webkit-text-stroke: 0;
-}
-
-@media (max-width: 860px) {
-  .name-ring {
-    --ring-radius: 420px;
-  }
-  .ring-seg {
-    font-size: clamp(1.6rem, 9vw, 2.6rem);
-  }
-}
-
-html.flat .name-ring {
-  display: none;
-}
-
 /* ================================================================== TYPE === */
 
 .kicker {
@@ -317,6 +248,24 @@ html.flat .name-ring {
   font-size: clamp(0.9rem, 1.7vh, 1.05rem);
 }
 
+.pitch-motto {
+  margin-top: clamp(1.5rem, 4vh, 2.75rem);
+  padding-top: clamp(0.9rem, 2vh, 1.25rem);
+  border-top: 1px solid var(--rule-soft);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem clamp(1rem, 3vw, 2rem);
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(0.9rem, min(2vw, 2.4vh), 1.25rem);
+  line-height: 1.3;
+}
+
+.pitch-motto .kicker {
+  color: var(--accent);
+}
+
 /* ============================================================ EXPERIENCE === */
 
 .path-row {
@@ -389,106 +338,6 @@ html.flat .name-ring {
   }
 }
 
-/* ================================================================= STORY === */
-
-.story {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: clamp(1.5rem, 5vw, 5rem);
-  align-items: start;
-}
-
-.story .first {
-  font-family: var(--display);
-  font-weight: 400;
-  font-size: clamp(1.05rem, min(2.4vw, 3.2vh), 1.8rem);
-  line-height: 1.25;
-}
-
-.story .rest p {
-  color: var(--fg-dim);
-  font-size: clamp(0.85rem, 1.6vh, 0.98rem);
-}
-
-.story .rest p + p {
-  margin-top: 1rem;
-}
-
-@media (max-width: 860px) {
-  .story {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* =============================================================== NUMBERS === */
-
-/* Not a grid: the stats are scattered through the corridor at different
-   depths, so they pass the camera at different sizes and rates. `--depth`
-   (0 far → 1 near) drives size, stroke weight, dimming and parallax at once.
-   `--d` is the panel's own flight distance, written by the flight loop. */
-
-.p-numbers .panel-inner {
-  width: min(1180px, 100%);
-}
-
-.stat-field {
-  position: relative;
-  width: 100%;
-  height: clamp(18rem, 52vh, 30rem);
-}
-
-.stat {
-  position: absolute;
-  display: flex;
-  align-items: baseline;
-  gap: clamp(0.5rem, 1.4vw, 1.1rem);
-  white-space: nowrap;
-  /* Near stats drift further per unit of scroll than far ones. */
-  transform: translate3d(calc(var(--d, 0) * var(--depth) * -70px), 0, 0);
-  will-change: transform;
-}
-
-.stat .value {
-  font-family: var(--display);
-  font-weight: 900;
-  line-height: 0.82;
-  letter-spacing: 0.01em;
-  /* Outline type — the fill is knocked out so the field stays airy even at
-     these sizes. Stroke thickens with proximity. */
-  color: transparent;
-  -webkit-text-stroke: calc(0.6px + var(--depth) * 1.7px) var(--fg);
-  font-size: calc((1.9rem + var(--depth) * 8.5rem) * var(--stat-scale, 1));
-  opacity: calc(0.34 + var(--depth) * 0.66);
-}
-
-.stat .label {
-  font-size: clamp(0.7rem, 1.3vh, 0.9rem);
-  letter-spacing: 0.02em;
-  color: var(--fg-dim);
-  opacity: calc(0.42 + var(--depth) * 0.58);
-}
-
-.sr-value {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-@media (max-width: 860px) {
-  :root {
-    --stat-scale: 0.5;
-  }
-  .stat-field {
-    height: clamp(16rem, 46vh, 22rem);
-  }
-  .stat {
-    transform: none;
-  }
-}
-
 /* ============================================================ TITLE CARDS === */
 
 .p-title .big,
@@ -540,6 +389,20 @@ html.flat .name-ring {
   display: inline-block;
 }
 
+.work-row .what {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.work-row .blurb {
+  margin-top: 0.4rem;
+  max-width: 48ch;
+  color: var(--fg-dim);
+  font-size: clamp(0.8rem, 1.45vh, 0.92rem);
+  line-height: 1.5;
+}
+
 .work-row .meta {
   font-size: clamp(0.72rem, 1.3vh, 0.85rem);
   color: var(--fg-faint);
@@ -580,8 +443,17 @@ html.flat .name-ring {
     grid-template-columns: 34px minmax(0, 1fr) 52px;
     row-gap: 0.15rem;
   }
+  /* Panels cannot scroll, so on a phone the blurb gets two lines and the
+     tags go — the name and the sentence are what sell the project. */
   .work-row .meta {
-    grid-column: 2;
+    display: none;
+  }
+  .work-row .blurb {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
   }
   .work-row .arrow {
     display: none;
@@ -645,43 +517,12 @@ html.flat .name-ring {
   color: var(--fg-faint);
 }
 
-/* ============================================================= MANIFESTO === */
-
-.manifesto li {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
-  gap: clamp(0.75rem, 3vw, 2.5rem);
-  padding: clamp(0.7rem, 2vh, 1.75rem) 0;
-  border-top: 1px solid var(--rule-soft);
-  align-items: start;
-}
-
-.manifesto li:last-child {
-  border-bottom: 1px solid var(--rule-soft);
-}
-
-.manifesto .n {
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  color: var(--accent);
-  padding-top: 0.45rem;
-}
-
-.manifesto .t {
-  font-family: var(--display);
-  font-weight: 400;
-  font-size: clamp(0.95rem, min(2.4vw, 2.9vh), 1.6rem);
-  line-height: 1.25;
-  max-width: 32ch;
-}
-
-@media (max-width: 620px) {
-  .manifesto li {
-    grid-template-columns: 32px minmax(0, 1fr);
-  }
-}
-
 /* =============================================================== CONTACT === */
+
+.p-contact .avail {
+  margin-bottom: clamp(1rem, 3vh, 2rem);
+  color: var(--accent);
+}
 
 .p-contact .mail {
   display: inline-block;

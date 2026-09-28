@@ -1,5 +1,6 @@
 import { useEffect, useRef, type MutableRefObject } from 'react'
 import { PANEL_WORLD, prefersReducedMotion, usePointer } from '../lib/hooks'
+import { FOV_Y, createRibbon, stageOptics } from './ribbon'
 
 /**
  * A slow-drifting field of points warped by value noise. It reacts to the
@@ -218,15 +219,35 @@ export default function HeroCanvas({ travel }: { travel: MutableRefObject<number
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuf)
     gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW)
     const aPosition = gl.getAttribLocation(program, 'aPosition')
-    gl.enableVertexAttribArray(aPosition)
-    gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0)
 
     const scaleBuf = gl.createBuffer()!
     gl.bindBuffer(gl.ARRAY_BUFFER, scaleBuf)
     gl.bufferData(gl.ARRAY_BUFFER, scales, gl.STATIC_DRAW)
     const aScale = gl.getAttribLocation(program, 'aScale')
-    gl.enableVertexAttribArray(aScale)
-    gl.vertexAttribPointer(aScale, 1, gl.FLOAT, false, 0, 0)
+
+    // WebGL1 attribute state is global and the ribbon uses its own, so the
+    // points rebind theirs every frame rather than once here.
+    const bindPoints = () => {
+      gl.useProgram(program)
+      gl.bindBuffer(gl.ARRAY_BUFFER, posBuf)
+      gl.enableVertexAttribArray(aPosition)
+      gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0)
+      gl.bindBuffer(gl.ARRAY_BUFFER, scaleBuf)
+      gl.enableVertexAttribArray(aScale)
+      gl.vertexAttribPointer(aScale, 1, gl.FLOAT, false, 0, 0)
+    }
+
+    // The hero title carried on as a ribbon of type. Optional: the field
+    // stands on its own if it cannot be built, and reduced motion skips it.
+    let ribbon: ReturnType<typeof createRibbon> = null
+    if (!prefersReducedMotion()) {
+      try {
+        ribbon = createRibbon(gl)
+      } catch (err) {
+        console.warn('[hero] ribbon unavailable:', err)
+      }
+    }
+    gl.useProgram(program)
 
     // ---------------------------------------------------------- uniforms ---
     const u = {
@@ -252,19 +273,33 @@ export default function HeroCanvas({ travel }: { travel: MutableRefObject<number
     // ------------------------------------------------------------ resize ---
     const proj = new Float32Array(16)
     const resize = () => {
+      // The canvas's own box, not the window: they differ by the scrollbar,
+      // and the ribbon has to land on DOM pixels exactly.
+      const cw = Math.max(1, canvas.clientWidth || window.innerWidth)
+      const ch = Math.max(1, canvas.clientHeight || window.innerHeight)
       const dpr = Math.min(window.devicePixelRatio || 1, 1.75)
-      const w = Math.max(1, Math.floor(window.innerWidth * dpr))
-      const h = Math.max(1, Math.floor(window.innerHeight * dpr))
+      const w = Math.max(1, Math.floor(cw * dpr))
+      const h = Math.max(1, Math.floor(ch * dpr))
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w
         canvas.height = h
       }
       gl.viewport(0, 0, w, h)
-      perspective(proj, (55 * Math.PI) / 180, w / h, 0.1, 120)
+      perspective(proj, FOV_Y, cw / ch, 0.1, 120)
+      // Lens shift onto the stage's perspective-origin, so this camera and the
+      // CSS one that moves the panels share a vanishing point.
+      const optics = stageOptics(cw, ch)
+      proj[8] = -optics.shiftX
+      proj[9] = -optics.shiftY
+      gl.useProgram(program)
       gl.uniformMatrix4fv(u.proj, false, proj)
+      ribbon?.resize(cw, ch)
     }
     resize()
-    window.addEventListener('resize', resize)
+    // Observed rather than window 'resize': the scrollbar appearing when the
+    // preloader unlocks the page narrows the canvas without firing one.
+    const observer = new ResizeObserver(resize)
+    observer.observe(canvas)
 
     // ------------------------------------------------------------- frame ---
     const reduced = prefersReducedMotion()
@@ -298,6 +333,8 @@ export default function HeroCanvas({ travel }: { travel: MutableRefObject<number
       // Fast to spin up, slower to unwind, so it trails the scroll.
       state.swirl = damp(state.swirl, swirlTarget, swirlTarget > state.swirl ? 7 : 3.5, dt)
 
+      bindPoints()
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE) // additive
       gl.uniform1f(u.time, state.time)
       gl.uniform1f(u.travel, state.travel)
       gl.uniform1f(u.swirl, state.swirl)
@@ -309,6 +346,10 @@ export default function HeroCanvas({ travel }: { travel: MutableRefObject<number
       gl.clearColor(0, 0, 0, 0)
       gl.clear(gl.COLOR_BUFFER_BIT)
       gl.drawArrays(gl.POINTS, 0, COUNT)
+      gl.disableVertexAttribArray(aPosition)
+      gl.disableVertexAttribArray(aScale)
+
+      ribbon?.draw(proj, travel.current)
 
       frame = requestAnimationFrame(render)
     }
@@ -337,9 +378,10 @@ export default function HeroCanvas({ travel }: { travel: MutableRefObject<number
     return () => {
       running = false
       cancelAnimationFrame(frame)
-      window.removeEventListener('resize', resize)
+      observer.disconnect()
       document.removeEventListener('visibilitychange', onVisibility)
       canvas.removeEventListener('webglcontextlost', onLost)
+      ribbon?.dispose()
       gl.deleteBuffer(posBuf)
       gl.deleteBuffer(scaleBuf)
       gl.deleteProgram(program)

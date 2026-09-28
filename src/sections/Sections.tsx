@@ -1,16 +1,14 @@
-import { forwardRef, type CSSProperties } from 'react'
+import { forwardRef } from 'react'
 import {
   EDUCATION,
   EXPERIENCE,
   LINKS,
-  MANIFESTO,
-  NUMBERS,
+  MORE_WORK,
   PITCH,
   PROJECTS,
   RESEARCH,
   SECTIONS,
   SITE,
-  STORY,
   type Panel as PanelData,
 } from '../data/content'
 
@@ -50,8 +48,8 @@ export const Panel = forwardRef<HTMLElement, { data: PanelData; index: number }>
             </h1>
             <div className="intro-meta">
               <div className="col">
-                <div className="kicker">Currently</div>
-                <p>Software Developer at Quantifi — risk systems, and the front ends on them.</p>
+                <div className="kicker">Available now</div>
+                <p>{SITE.availability} Most recently at Quantifi.</p>
               </div>
               <div className="col">
                 <div className="kicker">Based in</div>
@@ -71,13 +69,17 @@ export const Panel = forwardRef<HTMLElement, { data: PanelData; index: number }>
             <Head section="pitch" />
             <p className="pitch-lead">{PITCH.lead}</p>
             <p className="pitch-body">{PITCH.body}</p>
+            <p className="pitch-motto">
+              <span className="kicker">Rule of thumb</span>
+              {PITCH.motto}
+            </p>
           </Plane>
         )
 
       case 'experience':
         return (
           <Plane ref={ref} id="experience">
-            <Head section="experience" note="now at Quantifi" />
+            <Head section="experience" note="open to work" />
             <div className="path-list">
               {EXPERIENCE.map((row) => (
                 <div className="path-row" key={row.company + row.date}>
@@ -101,53 +103,6 @@ export const Panel = forwardRef<HTMLElement, { data: PanelData; index: number }>
           </Plane>
         )
 
-      case 'story': {
-        const [first, ...rest] = STORY
-        return (
-          <Plane ref={ref} id="story">
-            <Head section="story" />
-            <div className="story">
-              <p className="first">{first}</p>
-              <div className="rest">
-                {rest.map((p, i) => (
-                  <p key={i}>{p}</p>
-                ))}
-              </div>
-            </div>
-          </Plane>
-        )
-      }
-
-      case 'numbers':
-        return (
-          <Plane ref={ref} id="numbers" className="p-numbers">
-            <Head section="numbers" />
-            <div className="stat-field">
-              {NUMBERS.map((n) => (
-                <div
-                  className="stat"
-                  key={n.label}
-                  style={
-                    {
-                      '--depth': n.depth,
-                      left: `${n.x}%`,
-                      top: `${n.y}%`,
-                    } as CSSProperties
-                  }
-                >
-                  <span className="value" aria-hidden="true">
-                    {n.value}
-                  </span>
-                  <span className="label">
-                    <span className="sr-value">{n.value} </span>
-                    {n.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Plane>
-        )
-
       case 'work':
         return (
           <Plane ref={ref} id="work">
@@ -162,7 +117,10 @@ export const Panel = forwardRef<HTMLElement, { data: PanelData; index: number }>
                   rel="noreferrer noopener"
                 >
                   <span className="idx">{p.index}</span>
-                  <span className="name">{p.title}</span>
+                  <span className="what">
+                    <span className="name">{p.title}</span>
+                    <span className="blurb">{p.blurb}</span>
+                  </span>
                   <span className="meta">{p.tags.join(' · ')}</span>
                   <span className="year">{p.year}</span>
                   <span className="arrow" aria-hidden="true">
@@ -171,6 +129,9 @@ export const Panel = forwardRef<HTMLElement, { data: PanelData; index: number }>
                 </a>
               ))}
             </div>
+            <a className="go" href={MORE_WORK.href} target="_blank" rel="noreferrer noopener">
+              {MORE_WORK.label} <span aria-hidden="true">→</span>
+            </a>
           </Plane>
         )
 
@@ -187,24 +148,10 @@ export const Panel = forwardRef<HTMLElement, { data: PanelData; index: number }>
           </Plane>
         )
 
-      case 'manifesto':
-        return (
-          <Plane ref={ref} id="manifesto">
-            <Head section="manifesto" />
-            <ul className="manifesto">
-              {MANIFESTO.map((line, i) => (
-                <li key={i}>
-                  <span className="n">{String(i + 1).padStart(2, '0')}</span>
-                  <p className="t">{line}</p>
-                </li>
-              ))}
-            </ul>
-          </Plane>
-        )
-
       case 'contact':
         return (
           <Plane ref={ref} id="contact" className="p-contact">
+            <p className="kicker avail">{SITE.availability}</p>
             <p className="big display">
               Got something
               <br />
