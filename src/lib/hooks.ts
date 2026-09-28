@@ -32,7 +32,9 @@ export function useSmoothScroll(enabled: boolean) {
   useEffect(() => {
     if (!enabled || prefersReducedMotion()) return
 
-    const lenis = new Lenis({ duration: 1.4, wheelMultiplier: 0.9, touchMultiplier: 1.6 })
+    // lerp rather than a fixed-duration ease: a fixed ease restarts on every
+    // wheel tick, which lurches; a lerp just keeps gliding toward the target.
+    const lenis = new Lenis({ lerp: 0.07, wheelMultiplier: 0.85, touchMultiplier: 1.4 })
     lenisRef.current = lenis
 
     let frame = 0
@@ -143,9 +145,11 @@ export function useFlight({
         inner.style.opacity = opacity.toFixed(3)
 
         // Focus falls off either side of the focal plane. Skipped on small
-        // screens — blurring full-viewport type is the expensive part.
+        // screens — blurring full-viewport type is the expensive part, and
+        // capped low everywhere: past a few px it costs frames and adds
+        // nothing the fade isn't already doing.
         if (!coarse) {
-          const blur = clamp((Math.abs(d) - 0.07) * 15, 0, 13)
+          const blur = clamp((Math.abs(d) - 0.08) * 9, 0, 6)
           inner.style.filter = blur < 0.05 ? 'none' : `blur(${blur.toFixed(2)}px)`
         }
       }

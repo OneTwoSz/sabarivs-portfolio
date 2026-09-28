@@ -610,26 +610,9 @@ html.flat .panel-inner {
   opacity: 0.45;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
+  /* Static on purpose. Stepping it about reads as the whole screen
+     twitching, which fights the smooth flight. */
   background-size: 180px 180px;
-  animation: grainShift 0.7s steps(2) infinite;
-}
-
-@keyframes grainShift {
-  0% {
-    transform: translate(0, 0);
-  }
-  50% {
-    transform: translate(-3%, 2%);
-  }
-  100% {
-    transform: translate(2%, -3%);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .grain {
-    animation: none;
-  }
 }
 
 /* =============================================================== OVERLAY === */

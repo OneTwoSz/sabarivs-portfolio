@@ -1,5 +1,5 @@
 import { useEffect, useRef, type MutableRefObject } from 'react'
-import { PANEL_WORLD, prefersReducedMotion, usePointer } from '../lib/hooks'
+import { prefersReducedMotion, usePointer } from '../lib/hooks'
 import { FOV_Y, createRibbon, stageOptics } from './ribbon'
 
 /**
@@ -23,8 +23,8 @@ const VERT = /* glsl */ `
   uniform float uRoll;
   uniform vec2 uPointer;
   uniform float uSize;
-  /** 0 when parked on a panel, →1 crossing between two. Drives the vortex. */
-  uniform float uSwirl;
+  /** Smoothed flight speed, 0 at rest → 1 flat out. Purely radial, never sideways. */
+  uniform float uRush;
 
   varying float vFade;
 
@@ -71,26 +71,16 @@ const VERT = /* glsl */ `
     // recycles to the far end of the corridor on the way past.
     p.z = mod(p.z + uTravel, LEN) - LEN;
 
-    // pointer parallax, strongest on the points nearest the camera
-    p.xy += uPointer * 1.35 * (0.35 + (p.z + LEN) * 0.02);
+    // Pointer parallax, strongest on the points nearest the camera. Kept
+    // small: it is a hint of depth, not something to steer.
+    p.xy += uPointer * 0.55 * (0.35 + (p.z + LEN) * 0.02);
 
-    // --- vortex -----------------------------------------------------------
-    // Crossing between panels twists the field around the view axis. The
-    // rotation falls off with radius, so points near the centre whip around
-    // while the outer field barely moves — that shear is what reads as a
-    // vortex rather than a flat spin. Depth is folded in too, so the twist
-    // corkscrews down the corridor instead of turning as one rigid sheet.
-    float radius = length(p.xy);
+    // --- rush ---------------------------------------------------------------
+    // At speed the field opens outward from the axis, most on the near
+    // points, which reads as the corridor streaming past you. It is radial
+    // only — nothing moves sideways, so there is nothing to look shaky.
     float depth01 = (p.z + LEN) / LEN;
-    float twist = uSwirl * (2.6 / (radius * 0.28 + 1.0)) * (0.45 + depth01 * 0.9);
-
-    float tc = cos(twist);
-    float ts = sin(twist);
-    p.xy = vec2(p.x * tc - p.y * ts, p.x * ts + p.y * tc);
-
-    // Pull inward as it spins, so the field funnels toward the axis and
-    // springs back open once you settle on a panel.
-    p.xy *= 1.0 - uSwirl * 0.22;
+    p.xy *= 1.0 + uRush * 0.12 * depth01;
 
     // a very slow roll so the field never looks locked to the viewport
     float c = cos(uRoll);
@@ -104,16 +94,15 @@ const VERT = /* glsl */ `
     gl_Position = uProj * mv;
     // Inverse-distance sizing across a 78-unit corridor: points arrive as
     // specks and swell as they pass, which is what sells the forward motion.
-    // The vortex fattens them slightly so the twist has some weight.
-    gl_PointSize = uSize * aScale * (100.0 / dist) * (1.0 + uSwirl * 0.45);
+    gl_PointSize = uSize * aScale * (100.0 / dist) * (1.0 + uRush * 0.25);
 
     // Fade in at the far end and back out just before the camera, so points
     // arrive and leave rather than popping.
     float far = smoothstep(LEN + 14.0, LEN - 16.0, dist);
     float near = smoothstep(14.0, 27.0, dist);
-    // Brightening during the swirl also warms the field toward the accent,
-    // since the fragment shader mixes on vFade.
-    vFade = far * near * (0.35 + n * 0.65) * (1.0 + uSwirl * 0.5);
+    // A little brighter at speed, which also warms the brightest points
+    // toward the accent, since the fragment shader mixes on vFade.
+    vFade = far * near * (0.35 + n * 0.65) * (1.0 + uRush * 0.3);
   }
 `
 
@@ -255,7 +244,7 @@ export default function HeroCanvas({ travel }: { travel: MutableRefObject<number
       time: gl.getUniformLocation(program, 'uTime'),
       travel: gl.getUniformLocation(program, 'uTravel'),
       roll: gl.getUniformLocation(program, 'uRoll'),
-      swirl: gl.getUniformLocation(program, 'uSwirl'),
+      rush: gl.getUniformLocation(program, 'uRush'),
       pointer: gl.getUniformLocation(program, 'uPointer'),
       size: gl.getUniformLocation(program, 'uSize'),
       opacity: gl.getUniformLocation(program, 'uOpacity'),
@@ -303,7 +292,8 @@ export default function HeroCanvas({ travel }: { travel: MutableRefObject<number
 
     // ------------------------------------------------------------- frame ---
     const reduced = prefersReducedMotion()
-    const state = { opacity: 0, travel: travel.current, px: 0, py: 0, time: 0, swirl: 0 }
+    const state = { opacity: 0, travel: travel.current, px: 0, py: 0, time: 0, rush: 0 }
+    let lastTarget = travel.current
     let last = performance.now()
     let frame = 0
     let running = true
@@ -316,28 +306,24 @@ export default function HeroCanvas({ travel }: { travel: MutableRefObject<number
 
       state.opacity = damp(state.opacity, 0.78, 1.4, dt)
       // A touch of lag behind the scroll so the field carries momentum.
-      const prevTravel = state.travel
-      state.travel = damp(state.travel, travel.current, 6, dt)
-      state.px = damp(state.px, reduced ? 0 : pointer.current.x, 2.5, dt)
-      state.py = damp(state.py, reduced ? 0 : -pointer.current.y, 2.5, dt)
+      state.travel = damp(state.travel, travel.current, 5, dt)
+      state.px = damp(state.px, reduced ? 0 : pointer.current.x, 1.5, dt)
+      state.py = damp(state.py, reduced ? 0 : -pointer.current.y, 1.5, dt)
 
-      // --- vortex ---------------------------------------------------------
-      // Two things gate it. `between` peaks halfway between panels and is zero
-      // when one is at the focal plane, so a parked panel is never distorted.
-      // `speed` gates on actually moving, so stopping mid-transition unwinds
-      // rather than leaving the field frozen mid-twist.
-      const panelPos = travel.current / PANEL_WORLD
-      const between = Math.sin(Math.abs(panelPos % 1) * Math.PI)
-      const speed = Math.min(Math.abs(state.travel - prevTravel) / Math.max(dt, 1e-4) / 14, 1)
-      const swirlTarget = reduced ? 0 : between * speed
-      // Fast to spin up, slower to unwind, so it trails the scroll.
-      state.swirl = damp(state.swirl, swirlTarget, swirlTarget > state.swirl ? 7 : 3.5, dt)
+      // --- rush -----------------------------------------------------------
+      // Scroll input arrives in uneven bursts, so a per-frame speed is noisy;
+      // anything driven by it directly twitches. This one is damped hard
+      // enough that it can only swell and settle, never flicker.
+      const velocity = Math.abs(travel.current - lastTarget) / Math.max(dt, 1e-3)
+      lastTarget = travel.current
+      const rushTarget = reduced ? 0 : Math.min(velocity / 18, 1)
+      state.rush = damp(state.rush, rushTarget, rushTarget > state.rush ? 2.2 : 1.4, dt)
 
       bindPoints()
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE) // additive
       gl.uniform1f(u.time, state.time)
       gl.uniform1f(u.travel, state.travel)
-      gl.uniform1f(u.swirl, state.swirl)
+      gl.uniform1f(u.rush, state.rush)
       gl.uniform1f(u.roll, Math.sin(state.time * 0.05) * 0.04)
       gl.uniform2f(u.pointer, state.px, state.py)
       gl.uniform1f(u.size, window.innerWidth < 720 ? 1.7 : 2.4)
